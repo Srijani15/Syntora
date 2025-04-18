@@ -11,13 +11,14 @@
     <title>Edit Faculty Timetable | Syntora Admin</title>
     <link rel="stylesheet" href="https://bootswatch.com/5/flatly/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #f8f9fa;
         }
         .container {
-            max-width: 1100px;
+            max-width: 10000px;
             margin-top: 40px;
         }
         h2 {
@@ -36,6 +37,9 @@
         .btn-back {
             margin-bottom: 20px;
         }
+        .alert {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -47,12 +51,15 @@
         </div>
         <div class="card shadow p-4">
             <h2 class="text-center mb-4">Edit Faculty Timetable</h2>
+            <% if ("error".equals(request.getParameter("status"))) { %>
+                <div class="alert alert-danger">Error saving timetable. Please try again.</div>
+            <% } %>
             <form action="${pageContext.request.contextPath}/UploadFacultyTimetableServlet" method="post">
                 <div class="row mb-3">
                     <div class="col-md-3">
                         <label class="form-label">Faculty</label>
                         <select class="form-select" name="facultyId" required>
-                            <option value="">Select</option>
+                            <option value="">Select Faculty</option>
                             <% for (Faculty f : facultyList) { %>
                                 <option value="<%= f.getId() %>"><%= f.getTitle() + " " + f.getFirstName() + " " + f.getLastName() %></option>
                             <% } %>
@@ -61,16 +68,19 @@
                     <div class="col-md-3">
                         <label class="form-label">Department</label>
                         <select class="form-select" name="department" required>
-                            <option value="">Select</option>
+                            <option value="">Select Department</option>
                             <option value="CSE">CSE</option>
                             <option value="ECE">ECE</option>
                             <option value="ME">ME</option>
+                            <option value="AIML">AIML</option>
+                            <option value="IT">IT</option>
+                            <option value="EEE">EEE</option>
                         </select>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Year</label>
                         <select class="form-select" name="year" required>
-                            <option value="">Select</option>
+                            <option value="">Select Year</option>
                             <option value="1">1st</option>
                             <option value="2">2nd</option>
                             <option value="3">3rd</option>
@@ -80,7 +90,7 @@
                     <div class="col-md-3">
                         <label class="form-label">Semester</label>
                         <select class="form-select" name="semester" required>
-                            <option value="">Select</option>
+                            <option value="">Select Semester</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
                         </select>

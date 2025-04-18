@@ -298,53 +298,75 @@
 
 
         <div id="timetable" class="tab-content">
-            <h2>Timetable</h2>
-            <% try (Connection conn = DBConnection.getConnection()) {
-                   String sql = "SELECT t.id FROM timetable t JOIN students s ON t.department = s.department AND t.year = s.year AND t.semester = s.semester WHERE s.username = ?";
-                   PreparedStatement ps = conn.prepareStatement(sql);
-                   ps.setString(1, username);
-                   ResultSet rs = ps.executeQuery();
-                   if (rs.next()) {
-                       int timetableId = rs.getInt("id");
-                       sql = "SELECT te.day, te.time_slot, s.name AS subject, CONCAT(f.first_name, ' ', f.last_name) AS faculty " +
-                             "FROM timetable_entry te JOIN subjects s ON te.subject_id = s.id JOIN faculty f ON te.faculty_id = f.id " +
-                             "WHERE te.timetable_id = ? ORDER BY FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')";
-                       ps = conn.prepareStatement(sql);
-                       ps.setInt(1, timetableId);
-                       rs = ps.executeQuery();
+    <h2>Timetable</h2>
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <strong><i class="fas fa-calendar-alt"></i> Your Timetable</strong>
+        </div>
+        <div class="card-body">
+            <%
+                try (Connection conn = DBConnection.getConnection()) {
+                    // Get student details (department, year, semester)
+                    String userSql = "SELECT department, year, semester " +
+                                    "FROM users u JOIN students s ON u.id = s.user_id " +
+                                    "WHERE u.username = ?";
+                    PreparedStatement userPs = conn.prepareStatement(userSql);
+                    userPs.setString(1, username);
+                    ResultSet userRs = userPs.executeQuery();
+
+                    if (userRs.next()) {
+                        String department = userRs.getString("department");
+                        int year = userRs.getInt("year");
+                        int semester = userRs.getInt("semester");
+
+                        // Query timetable table for the image
+                        String timetableSql = "SELECT image_path FROM timetable " +
+                                             "WHERE department = ? AND year = ? AND semester = ?";
+                        PreparedStatement timetablePs = conn.prepareStatement(timetableSql);
+                        timetablePs.setString(1, department);
+                        timetablePs.setInt(2, year);
+                        timetablePs.setInt(3, semester);
+                        ResultSet timetableRs = timetablePs.executeQuery();
+
+                        if (timetableRs.next()) {
+                            String imagePath = timetableRs.getString("image_path");
+                            if (imagePath != null && !imagePath.trim().isEmpty()) {
             %>
-            <table class="table table-striped">
-                <thead><tr><th>Time</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th></tr></thead>
-                <tbody>
-                <% String[] times = {"9:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-1:00", "2:00-3:00", "3:00-4:00"};
-                   for (String time : times) {
-                %>
-                <tr><td><%= time %></td>
-                <% for (String day : new String[]{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}) {
-                       rs.beforeFirst();
-                       String subject = "", faculty = "";
-                       while (rs.next()) {
-                           if (rs.getString("day").equals(day) && rs.getString("time_slot").equals(time)) {
-                               subject = rs.getString("subject");
-                               faculty = rs.getString("faculty");
-                               break;
-                           }
-                       }
-                %>
-                <td><%= subject.isEmpty() ? "-" : subject + "<br><small>(" + faculty + ")</small>" %></td>
-                <% } %>
-                </tr>
-                <% } %>
-                </tbody>
-            </table>
-            <%      } else { %>
-                <p>No timetable available.</p>
-            <%      }
-               } catch (Exception e) {
-                   out.println("<p>Error loading timetable: " + e.getMessage() + "</p>");
-               }
+                            <div class="text-center">
+                                <img src="${pageContext.request.contextPath}/<%= imagePath %>" 
+                                     alt="Timetable" 
+                                     class="img-fluid rounded border timetable-image"
+                                     style="max-width: 100%; max-height: 600px; cursor: pointer;"
+                                     data-img-url="${pageContext.request.contextPath}/<%= imagePath %>">
+                            </div>
+            <%
+                            } else {
+            %>
+                            <p class="text-muted">No timetable image uploaded.</p>
+            <%
+                            }
+                        } else {
+            %>
+                            <p class="text-muted">No timetable available for <%= department %> - Year <%= year %> - Semester <%= semester %>.</p>
+            <%
+                        }
+                        timetableRs.close();
+                        timetablePs.close();
+                    } else {
+            %>
+                        <p class="text-danger">Error: Student academic info not found.</p>
+            <%
+                    }
+                    userRs.close();
+                    userPs.close();
+                } catch (Exception e) {
+                    out.println("<p class='text-danger'>Error loading timetable: " + e.getMessage() + "</p>");
+                    e.printStackTrace();
+                }
             %>
         </div>
+    </div>
+</div>
         <div id="projects" class="tab-content">
     <h2>Projects</h2>
     <%
@@ -473,27 +495,86 @@
     %>
 </div>
 
-        <div id="grades" class="tab-content">
+<div id="grades" class="tab-content">
             <h2>Grades</h2>
-            <% try (Connection conn = DBConnection.getConnection()) {
-                   String sql = "SELECT s.name, g.grade FROM grades g JOIN subjects s ON g.subject_id = s.id WHERE g.student_id = (SELECT id FROM students WHERE username = ?)";
-                   PreparedStatement ps = conn.prepareStatement(sql);
-                   ps.setString(1, username);
-                   ResultSet rs = ps.executeQuery();
+            <%
+                try (Connection conn = DBConnection.getConnection()) {
+                    String sql = "SELECT s.name AS subject, g.grade " +
+                                 "FROM grades g " +
+                                 "JOIN students st ON g.student_id = st.id " +
+                                 "JOIN users u ON st.user_id = u.id " +
+                                 "JOIN subjects s ON g.subject_id = s.id " +
+                                 "WHERE u.username = ? ORDER BY s.name";
+                    PreparedStatement ps = conn.prepareStatement(sql);
+                    ps.setString(1, username);
+                    ResultSet rs = ps.executeQuery();
+                    boolean hasGrades = false;
             %>
-            <table class="table table-striped">
-                <thead><tr><th>Subject</th><th>Grade</th></tr></thead>
-                <tbody>
-                <% while (rs.next()) { %>
-                    <tr><td><%= rs.getString("name") %></td><td><%= rs.getString("grade") %></td></tr>
-                <% } %>
-                </tbody>
-            </table>
-            <%      } catch (Exception e) {
-                    out.println("<p>Error loading grades: " + e.getMessage() + "</p>");
+            <div class="card shadow-sm grades-card">
+                <div class="card-header bg-primary text-white">
+                    <strong><i class="fas fa-graduation-cap"></i> Academic Grades</strong>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped table-hover grades-table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <%
+                                while (rs.next()) {
+                                    hasGrades = true;
+                                    String grade = rs.getString("grade");
+                                    String gradeClass = "";
+                                    switch (grade != null ? grade.toUpperCase() : "") {
+                                        case "A":
+                                            gradeClass = "grade-A";
+                                            break;
+                                        case "B":
+                                            gradeClass = "grade-B";
+                                            break;
+                                        case "C":
+                                            gradeClass = "grade-C";
+                                            break;
+                                        case "D":
+                                        case "F":
+                                            gradeClass = "grade-D";
+                                            break;
+                                        default:
+                                            gradeClass = "";
+                                    }
+                            %>
+                            <tr>
+                                <td><%= rs.getString("subject") %></td>
+                                <td class="<%= gradeClass %>"><%= grade %></td>
+                            </tr>
+                            <%
+                                }
+                                if (!hasGrades) {
+                            %>
+                            <tr>
+                                <td colspan="2" class="text-muted text-center">No grades available.</td>
+                            </tr>
+                            <%
+                                }
+                            %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <%
+                    rs.close();
+                    ps.close();
+                } catch (Exception e) {
+                    out.println("<p class='text-danger'>Error loading grades: " + e.getMessage() + "</p>");
+                    e.printStackTrace();
                 }
             %>
         </div>
+
+
         <div id="remarks" class="tab-content">
             <h2>Remarks</h2>
             <% try (Connection conn = DBConnection.getConnection()) {
@@ -540,32 +621,105 @@
         </div>
     <div id="notifications" class="tab-content">
             <h2>Notifications</h2>
-            <% if (request.getParameter("error") != null) { %>
-                <div class="alert alert-danger"><%= request.getParameter("error") %></div>
-            <% } %>
-            <% 
-                try (Connection conn = DBConnection.getConnection()) {
-                    String sql = "SELECT n.message, n.date, u.username AS sender_name " +
-                                 "FROM notifications n JOIN users u ON n.sender_id = u.id " +
-                                 "WHERE n.user_id = (SELECT id FROM students WHERE username = ?) AND n.user_type = 'student' ORDER BY n.date DESC";
-                    PreparedStatement ps = conn.prepareStatement(sql);
-                    ps.setString(1, username); // Reuse username instead of re-declaring
-                    ResultSet rs = ps.executeQuery();
-            %>
-            <table class="table table-striped">
-                <thead><tr><th>Message</th><th>Date</th><th>Sent By</th></tr></thead>
-                <tbody>
-                <% while (rs.next()) { %>
-                    <tr><td><%= rs.getString("message") %></td><td><%= rs.getString("date") %></td><td><%= rs.getString("sender_name") %></td></tr>
-                <% } %>
-                <% if (!rs.first()) { %>
-                    <tr><td colspan="3" class="text-muted">No notifications received yet.</td></tr>
-                <% } %>
-                </tbody>
-            </table>
-            <% } catch (Exception e) {
-                out.println("<p class='text-danger'>Error loading notifications: " + e.getMessage() + "</p>");
-            } %>
+            <div class="card p-3 shadow-sm">
+                <%
+                    int studentId = -1;
+                    String studentDepartment = null;
+                    String studentYear = null;
+                    try (Connection conn = DBConnection.getConnection()) {
+                        String sql = "SELECT id, department, year FROM users WHERE username = ?";
+                        PreparedStatement ps = conn.prepareStatement(sql);
+                        ps.setString(1, (String) session.getAttribute("username"));
+                        ResultSet rs = ps.executeQuery();
+                        if (rs.next()) {
+                            studentId = rs.getInt("id");
+                            studentDepartment = rs.getString("department");
+                            studentYear = rs.getString("year");
+                        }
+                        rs.close();
+                        ps.close();
+
+                        if (studentId != -1) {
+                            sql = "SELECT sender_id, user_type, department, year, message, date " +
+                                  "FROM notifications " +
+                                  "WHERE (user_id = ? OR (user_type = 'all' AND (department = ? OR department = 'all') AND (year = ? OR year = 'all'))) " +
+                                  "ORDER BY date DESC";
+                            ps = conn.prepareStatement(sql);
+                            ps.setInt(1, studentId);
+                            ps.setString(2, studentDepartment != null ? studentDepartment : "all");
+                            ps.setString(3, studentYear != null ? studentYear : "all");
+                            rs = ps.executeQuery();
+                %>
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Sender</th>
+                            <th>Recipient Type</th>
+                            <th>Department</th>
+                            <th>Year</th>
+                            <th>Message</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <%
+                            boolean hasNotifications = false;
+                            while (rs.next()) {
+                                hasNotifications = true;
+                                int senderId = rs.getInt("sender_id");
+                                String userType = rs.getString("user_type");
+                                String notificationDepartment = rs.getString("department");
+                                String year = rs.getString("year");
+                                String message = rs.getString("message");
+                                String date = rs.getString("date");
+
+                                String senderName = "Unknown";
+                                sql = "SELECT username FROM users WHERE id = ?";
+                                try (PreparedStatement psSender = conn.prepareStatement(sql)) {
+                                    psSender.setInt(1, senderId);
+                                    try (ResultSet rsSender = psSender.executeQuery()) {
+                                        if (rsSender.next()) {
+                                            senderName = rsSender.getString("username");
+                                        }
+                                    }
+                                }
+                        %>
+                        <tr>
+                            <td><%= senderName %></td>
+                            <td><%= userType != null ? userType : "-" %></td>
+                            <td><%= notificationDepartment != null ? notificationDepartment : "-" %></td>
+                            <td><%= year != null ? year : "-" %></td>
+                            <td><%= message != null ? message : "-" %></td>
+                            <td><%= date != null ? date : "-" %></td>
+                        </tr>
+                        <%
+                            }
+                            rs.close();
+                            ps.close();
+                            if (!hasNotifications) {
+                        %>
+                        <tr>
+                            <td colspan="6" class="text-muted">No notifications received.</td>
+                        </tr>
+                        <%
+                            }
+                        %>
+                    </tbody>
+                </table>
+                <%
+                        } else {
+                %>
+                <div class="alert alert-warning">Unable to retrieve student ID.</div>
+                <%
+                        }
+                    } catch (SQLException e) {
+                %>
+                <div class="alert alert-danger">Error retrieving notifications: <%= e.getMessage() %></div>
+                <%
+                        e.printStackTrace();
+                    }
+                %>
+            </div>
         </div>
     </div>
     <script>

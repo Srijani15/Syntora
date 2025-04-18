@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*, syntora.db.DBConnection" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -30,7 +31,7 @@
         <a href="#manageTimetables" onclick="showContent('manageTimetables')"><i class="fas fa-calendar-alt"></i> Manage Timetables</a>
         <a href="#manageAttendance" onclick="showContent('manageAttendance')"><i class="fas fa-check-square"></i> Manage Attendance</a>
         <a href="#sendNotifications" onclick="showContent('sendNotifications')"><i class="fas fa-bell"></i> Send Notifications</a>
-        <a href="logout" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        <a href="${pageContext.request.contextPath}/logout" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
     <div class="content">
         <div id="welcome" class="tab-content">
@@ -138,10 +139,153 @@
             </div>
         </div>
        <div id="sendNotifications" class="tab-content">
-            <h2>Send Notifications</h2>
+            <h2>Notifications</h2>
             <div class="card p-3 shadow-sm">
-               
-            <a href="${pageContext.request.contextPath}/pages/adminNotifications.jsp"><i class="fas fa-bell"></i> Notifications</a>
+                <h4>Send Notification</h4>
+                <% if ("Notification_sent".equals(request.getParameter("success"))) { %>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    Notification sent successfully!
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <% } %>
+                <% if (request.getParameter("error") != null) { %>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    Error: <%= request.getParameter("error").replace("_", " ") %>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <% } %>
+                <form action="${pageContext.request.contextPath}/sendNotification" method="post" class="mb-4">
+                    <div class="form-group">
+                        <label for="userType">Recipient Type</label>
+                        <select name="userType" id="userType" class="form-control" required onchange="toggleFields()">
+                            <option value="">Select Recipient</option>
+                            <option value="student">Students</option>
+                            <option value="faculty">Faculty</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="departmentGroup">
+                        <label for="department">Department</label>
+                        <select name="department" id="department" class="form-control">
+                            <option value="all">All Departments</option>
+                            <option value="AIML">AIML</option>
+                            <option value="CSE">CSE</option>
+                            <option value="IT">IT</option>
+                            <option value="ECE">ECE</option>
+                            <option value="EEE">EEE</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="yearGroup" style="display: none;">
+                        <label for="year">Year</label>
+                        <select name="year" id="year" class="form-control">
+                            <option value="all">All Years</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="semesterGroup" style="display: none;">
+                        <label for="semester">Semester</label>
+                        <select name="semester" id="semester" class="form-control">
+                            <option value="all">All Semesters</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea name="message" id="message" class="form-control" rows="5" required placeholder="Enter your message"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Notification</button>
+                </form>
+                <hr>
+                <h4>Sent Notifications</h4>
+                <%
+                    int senderId = -1;
+                    try (Connection conn = DBConnection.getConnection()) {
+                        String sql = "SELECT id FROM users WHERE username = ?";
+                        PreparedStatement ps = conn.prepareStatement(sql);
+                        ps.setString(1, (String) session.getAttribute("username"));
+                        ResultSet rs = ps.executeQuery();
+                        if (rs.next()) {
+                            senderId = rs.getInt("id");
+                        }
+                        rs.close();
+                        ps.close();
+
+                        if (senderId != -1) {
+                            sql = "SELECT user_type, department, year, semester, message, date " +
+                                  "FROM notifications WHERE sender_id = ? ORDER BY date DESC";
+                            ps = conn.prepareStatement(sql);
+                            ps.setInt(1, senderId);
+                            rs = ps.executeQuery();
+                %>
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Recipient Type</th>
+                            <th>Department</th>
+                            <th>Year</th>
+                            <th>Semester</th>
+                            <th>Message</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <%
+                            boolean hasNotifications = false;
+                            while (rs.next()) {
+                                hasNotifications = true;
+                                String userType = rs.getString("user_type");
+                                String department = rs.getString("department");
+                                String year = rs.getString("year");
+                                String semester = rs.getString("semester");
+                                String message = rs.getString("message");
+                                String date = rs.getString("date");
+                        %>
+                        <tr>
+                            <td><%= userType != null ? userType : "-" %></td>
+                            <td><%= department != null ? department : "-" %></td>
+                            <td><%= year != null ? year : "-" %></td>
+                            <td><%= semester != null ? semester : "-" %></td>
+                            <td><%= message != null ? message : "-" %></td>
+                            <td><%= date != null ? date : "-" %></td>
+                        </tr>
+                        <%
+                            }
+                            rs.close();
+                            ps.close();
+                            if (!hasNotifications) {
+                        %>
+                        <tr>
+                            <td colspan="6" class="text-muted">No notifications sent.</td>
+                        </tr>
+                        <%
+                            }
+                        %>
+                    </tbody>
+                </table>
+                <%
+                        } else {
+                %>
+                <div class="alert alert-warning">Unable to retrieve sender ID.</div>
+                <%
+                        }
+                    } catch (SQLException e) {
+                %>
+                <div class="alert alert-danger">Error retrieving notifications: <%= e.getMessage() %></div>
+                <%
+                        e.printStackTrace();
+                    }
+                %>
             </div>
         </div>
 </div>

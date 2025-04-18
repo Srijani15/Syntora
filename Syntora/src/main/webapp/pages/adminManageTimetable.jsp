@@ -12,8 +12,8 @@
             background-color: #f8f9fa;
         }
         .container {
-            max-width: 600px;
-            margin-top: 60px;
+            max-width: 1500px;
+            margin-top: 80px;
         }
         .card {
             padding: 25px;

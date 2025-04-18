@@ -69,6 +69,9 @@
                 <select name="department" class="form-control" required>
                     <option value="CSE" <%= "CSE".equals(department) ? "selected" : "" %>>CSE</option>
                     <option value="IT" <%= "IT".equals(department) ? "selected" : "" %>>IT</option>
+                    <option value="AIML" <%= "AIML".equals(department) ? "selected" : "" %>>AIML</option>
+                    <option value="ECE" <%= "ECE".equals(department) ? "selected" : "" %>>ECE</option>
+                    <option value="EEE" <%= "EEE".equals(department) ? "selected" : "" %>>EEE</option>
                 </select>
             </div>
             <button type="submit" class="btn btn-primary">Save</button>

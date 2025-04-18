@@ -46,8 +46,9 @@
                         <option value="">Select Department</option>
                         <option value="CSE">CSE</option>
                         <option value="ECE">ECE</option>
-                        <option value="ME">ME</option>
-                        <!-- Add more departments if needed -->
+                        <option value="AIML">AIML</option>
+                        <option value="EEE">EEE</option>
+                        <option value="IT">IT</option>
                     </select>
                 </div>
                 <div class="mb-3">

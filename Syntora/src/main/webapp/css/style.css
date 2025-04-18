@@ -31,7 +31,7 @@ h1, h2, h3 {
     font-size: 24px;
     margin-bottom: 30px;
     text-align: center;
-    color: #007bff; /* Blue from index.jsp */
+    color: #007bff;
 }
 
 .sidebar a {
@@ -50,11 +50,11 @@ h1, h2, h3 {
 .sidebar a i {
     margin-right: 10px;
     font-size: 18px;
-    color: #007bff; /* Blue from index.jsp */
+    color: #007bff;
 }
 
 .sidebar a:hover, .sidebar a.active {
-    background-color: #007bff; /* Blue from index.jsp */
+    background-color: #007bff;
     color: #fff;
     border-color: #0056b3;
 }
@@ -78,6 +78,8 @@ h1, h2, h3 {
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
+    width: calc(100% - 300px); /* Ensure content width adjusts properly */
+    overflow-x: auto; /* Allow horizontal scrolling if needed */
 }
 
 .tab-content {
@@ -112,7 +114,9 @@ h1, h2, h3 {
 .table {
     background: #fff;
     border-radius: 8px;
-    overflow: hidden;
+    /* Removed overflow: hidden to prevent clipping */
+    width: 100%; /* Ensure table takes full width of container */
+    table-layout: fixed; /* Fixed layout to prevent column width issues */
 }
 
 .table thead {
@@ -123,6 +127,14 @@ h1, h2, h3 {
 .table th, .table td {
     padding: 12px;
     vertical-align: middle;
+    text-align: center; /* Center-align text for consistency */
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden; /* Handle overflow within cells */
+    text-overflow: ellipsis; /* Add ellipsis for overflowed text */
+}
+
+.table th {
+    font-weight: 600; /* Ensure headers stand out */
 }
 
 /* Forms */
@@ -142,7 +154,7 @@ h1, h2, h3 {
     padding: 10px 20px;
     font-weight: 500;
     transition: all 0.3s ease;
-    background-color: #007bff; /* Blue from index.jsp */
+    background-color: #007bff;
     color: #fff;
     border: none;
 }
@@ -169,6 +181,7 @@ h1, h2, h3 {
     }
     .content {
         margin-left: 0;
+        width: 100%; /* Full width on mobile */
     }
     .toggle-btn {
         display: block;
@@ -176,11 +189,19 @@ h1, h2, h3 {
         top: 20px;
         left: 20px;
         z-index: 1100;
-        background: #007bff; /* Blue from index.jsp */
+        background: #007bff;
         color: #fff;
         border: none;
         padding: 10px;
         border-radius: 50%;
         cursor: pointer;
+    }
+    .table {
+        width: 100%; /* Ensure table fits on mobile */
+        display: block; /* Allow block behavior for scrolling */
+        overflow-x: auto; /* Enable horizontal scrolling on mobile */
+    }
+    .table thead, .table tbody, .table th, .table td, .table tr {
+        display: block; /* Ensure table elements stack properly */
     }
 }

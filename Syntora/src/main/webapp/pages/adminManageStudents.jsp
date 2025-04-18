@@ -20,7 +20,7 @@
             padding: 8px 0; /* Add vertical padding for better separation */
         }
         .wide-container {
-            max-width: 1400px; /* Wider layout */
+            max-width: 2500px; /* Wider layout */
             width: 90%; /* Takes up most of the viewport */
             margin: 0 auto;
         }
